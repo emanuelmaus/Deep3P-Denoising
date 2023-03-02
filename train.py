@@ -163,7 +163,7 @@ class Trainer:
         batchtrafo = utils.BatchTransformer()
 
         # for conversion
-        backconv = utils.NormFloat2Uint16()
+        backconv = utils.NormFloat2UInt16_round()
 
 
         ## setup dataset

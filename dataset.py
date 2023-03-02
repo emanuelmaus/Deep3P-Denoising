@@ -1,11 +1,8 @@
 import numpy as np
 import numpy.ma as ma
 import torch
-from skimage import transform
-import os
-import copy
-import tifffile
 
+## Dataset for training
 class N2VDataset3D(torch.utils.data.Dataset):
     """
     dataset of a list of image stacks with the following characteristics
@@ -92,3 +89,117 @@ class N2VDataset3D(torch.utils.data.Dataset):
         for img_stack_size in self.no_imgs_each_stack:
             patch_data_list.append(np.arange(self.stack_size)[None, :] + np.arange((img_stack_size - 1) - (self.stack_size - 1))[:, None])
         return patch_data_list
+
+## Dataset for inference
+
+class InferenceDataset3D(torch.utils.data.Dataset):
+    """
+    dataset of a list of image stacks with the following characteristics
+        - different lateral image sizes
+        - stack size differ
+    """
+    
+    def __init__(self, data, z_crop_width, z_inputstack, stride_to_size_ratio, transform=None):
+
+        self.data = data
+        self.front_width, self.tail_width = z_crop_width 
+        self.z_inputstack = z_inputstack
+        self.stride_to_size_ratio = stride_to_size_ratio
+        self.transform = transform
+        
+        self.original_size = self.data.shape
+        self.original_z_dim = self.original_size[0]
+        
+        self.new_z_dim, self.new_z_inputstack, self.stride = self._generate_parameters()
+        self.index_array = self._generate_index_array()
+        self.norm_factors = self._generate_norm_factors()
+        self.pad_extension_front, self.pad_extension_tail = self._generate_pad_extensions()
+        self.data = self._extend_data()
+       
+
+    def __getitem__(self, index):
+
+
+        current_index = self.index_array[index]
+        cropped_current_index = current_index[self.front_width:-self.tail_width]
+        # Shift the index for the front_width size
+        cropped_current_index = cropped_current_index - self.front_width
+        # Since we only consider the non cropped weights, our norm_factor has - front_width element less
+        cropped_norm_factors = self.norm_factors[cropped_current_index]
+        input = self.data[current_index][..., None]
+        
+
+        if input.dtype == 'float64':
+            input = input.astype(np.int16)
+            
+            input = (input / (2 * np.iinfo(input.dtype).max)).astype(np.float64) + 0.5
+
+        if input.dtype == 'int16':
+            input = (input / (2 * np.iinfo(input.dtype).max)).astype(np.float64) + 0.5
+
+        if input.dtype == 'uint16':
+            input = (input / np.iinfo(input.dtype).max).astype(np.float64)
+            
+        if input.dtype == 'int8':
+            input = (input / np.iinfo(input.dtype).max).astype(np.float64)
+
+        if input.dtype == 'uint8':
+            input = (input / np.iinfo(input.dtype).max).astype(np.float64)
+            
+        if input.ndim == 2:
+            input = np.expand_dims(input, axis=2)
+
+        if self.transform:
+            data = self.transform(input)
+        else:
+            data = input
+
+        return data, cropped_current_index, cropped_norm_factors
+
+    def __len__(self):
+        return int(len(self.index_array))
+
+     
+    def _generate_parameters(self):
+        z_inputstack_front_tail = self.front_width + self.z_inputstack + self.tail_width 
+        z_dim_front_tail = self.front_width + self.original_z_dim + self.tail_width
+        # Modify, if the stack_size%stride_to_size_ratio=!=0
+        new_z_inputstack = z_inputstack_front_tail + self.z_inputstack%self.stride_to_size_ratio
+
+        # Stride needed to be adjusted by - 1
+        stride = int(new_z_inputstack/self.stride_to_size_ratio)-1
+
+        new_z_dim = z_dim_front_tail + z_dim_front_tail%stride
+
+        return new_z_dim, new_z_inputstack, stride
+
+    
+    def _generate_index_array(self):
+        n_h = self.new_z_dim - self.stride
+        return np.arange(self.new_z_inputstack)[None, :] + np.arange(0, n_h, self.stride)[:, None]
+    
+    def _generate_pad_extensions(self):
+        return self.front_width, self.index_array.max() - self.original_z_dim - self.front_width + 1 
+        
+    def _extend_data(self):
+        return np.pad(self.data, ((self.pad_extension_front, self.pad_extension_tail),(0,0),(0,0)), mode='symmetric') 
+    
+    def _generate_norm_factors(self):
+        _, counts = np.unique(self.index_array[:, self.front_width:-self.tail_width], return_counts=True)
+        return 1/counts
+    
+    def get_pad_extensions(self):
+        
+         return self.pad_extension_front, self.pad_extension_tail
+    
+    def get_index_array(self):
+        
+        return  self.index_array
+    
+    def get_cropping_indices(self):
+        
+        return 0, self.original_z_dim
+    
+    def get_output_size(self):
+       
+        return (self.original_z_dim + self.pad_extension_tail - self.tail_width, self.original_size[1], self.original_size[2])
