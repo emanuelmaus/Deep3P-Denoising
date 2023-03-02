@@ -1,36 +1,21 @@
-# Deep3P-Denoising
+https://gitlab.com/suamE/cascadedenoisingstrategies.git# Deep3P-Denoising
 Deep3P Denoising: Code of the 3PM-Noise2Void and PerStruc-Denoiser Method
 
 ADD SMALL SUMMARY OF PROJECT AND RESULTING DATA
-
-This Matlab code is part of the improvements made to the neuroscientific, open-source software **CaSCaDe 2.0** (**Ca**lcium **S**ignal Analysis and **Ca**lcium **De**coding **2.0**). It replaces the classical noise filtering of the previous version of [CaSCaDe](https://pubmed.ncbi.nlm.nih.gov/28132831/) [[1]](#references) with unsupervised deep-learning based denoising (**3D-Noise2Noise** [[2]](#references)[[3]](#references)). The code helps to remove noise from calcium signals that were hidden by the inherent 2-photon and 3-photon microscopy noise, allowing the segmentation and detection pipeline to work more accurately and robustly.
-These Python scripts contain the following functionality based on the 3D-Noise2Noise method:
-
-- [**Training:**](#training) Optimized training on selected data.
-- [**Inference:**](#inference) Optimized denoising of given data with selected, trained model.
-- [**Transfer-Learning:**](#transfer-learning) Optimized adjustment of a pre-trained model to new selected data.
-
-|  ![Results of the 3DN2N restored 2P data](docs/images/2P/figure_2P.gif) |
-|:---|
-|**Deep-learning restored two photon microscopy recording:**
-**(a)** An overlay of raw and denoised calcium signals of astrocytes.
-**(b)** Zoomed-in views on a region of interest, showcasing the raw and the denoised recording in finer detail.|
-
 ## Table of Contents
 
-- [Deep3P-Denoising](#deep3p-denoising)
-  - [Table of Contents](#table-of-contents)
-  - [Dataset](#dataset)
-  - [Dependencies](#dependencies)
-  - [Installation](#installation)
-  - [How-To-Run](#how-to-run)
-    - [Training](#training)
-    - [Inference](#inference)
-    - [Transfer-Learning](#transfer-learning)
-    - [Further information](#further-information)
-  - [Future Work](#future-work)
-  - [References](#references)
-  - [Acknowledgements](#acknowledgements)
+- [Table of Contents](#table-of-contents)
+- [Dataset](#dataset)
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+- [How-To-Run](#how-to-run)
+  - [Training](#training)
+  - [Inference](#inference)
+  - [PerStruc-Denoiser](#perstruc-denoiser)
+  - [Further information](#further-information)
+- [Future Work](#future-work)
+- [References](#references)
+- [Acknowledgements](#acknowledgements)
 
 ## Dataset
 
@@ -58,22 +43,18 @@ To install and use these denoising scripts, follow these steps:
 
 - Clone the repository using the following command in your terminal:
 ```sh
-git clone https://gitlab.com/suamE/cascadedenoisingstrategies.git
+git clone https://github.com/emanuelmaus/Deep3P-Denoising.git
 ```
 - Navigate to the cloned repository by using the following command:
 ```sh
-cd cascadedenoisingstrategies
+cd Deep3P-Denoising/notebooks
 ```
-- Launch Matlab by typing ``matlab`` in your terminal.
-- Add the *utils* folder and its subfolders to Matlab's search path by entering the following command in Matlab's command prompt:
-```Matlab
-addpath(genpath("utils"));
-```
+- Launch Jupyter-lab by typing ``jupyter-lab`` in your terminal.
 
 ## How-To-Run
 
 
-There are three main scripts for **training** ([``training_routine.m``](training_routine.m)), **inference**([``prediction_3D_overlapping.m``](prediction_3D_overlapping.m)), and **transfer learning**([``transfer_learning_routine.m``](transfer_learning_routine.m)).
+There are three notebooks for **training** ([``01_Training-3PM-Noise2Void.ipynb``](/notebooks/01_Training-3PM-Noise2Void.ipyn)), **inference**([``02_Inference-3PM-Noise2Void.ipynb``](/notebooks/02_Inference-3PM-Noise2Void.ipynb)), and **PerStruc-Denoiser**([``03_PerStruc-Denoiser.ipynb``](/notebooks/03_PerStruc-Denoiser.ipynb)).
 
 Below is a description of how to run each script:
 
@@ -115,7 +96,7 @@ denoised_img_stack_cell = prediction_3D_overlapping();
 	- ``denoised_img_stack_cell``: a ``cell array`` containing the denoised data
 
 
-### Transfer-Learning
+### PerStruc-Denoiser
 ```Matlab
 [trained_model, denoised_img_stack_cell] = transfer_learning_routine();
 ```
@@ -134,15 +115,15 @@ denoised_img_stack_cell = prediction_3D_overlapping();
 
 ### Further information
 
-For more detailed information about the code and its functionality, please refer to the [documentation file](docs/documentation/Documentation.txt) and the code itself, which includes comments explaining the various functions and steps. Additionally, you may contact the authors for further assistance or clarification.
+For more detailed information about the code and its functionality, please refer to the [documentation file](/docs/documentation/Documentation.txt) and the code itself, which includes comments explaining the various functions and steps. Additionally, you may contact the authors for further assistance or clarification.
 
 ## Future Work
 
 - [X] Document the code
 - [ ] Fix certain bugs
-	- [ ] Make predictions directly after training in	    [training_routine.m](https://gitlab.com/suamE/cascadedenoisingstrategies/-/blob/main/training_routine.m#L169).
+	- [ ] Make predictions directly after training in
 - [ ] Implement certain features
-	- [ ] Implement/Add a function, which allows for predictions on a test substack instead of random patches in [training_routine](training_routine.m) and [transfer_learning_routine](transfer_learning_routine.m).
+	- [ ] Implement/Add a function, which allows for predictions on a test substack instead of random patches in.
 	- [ ] Implement a function, that adjusts the input dimension/ patch size based on stored prediction parameters, which corresponds to the "conservation of volume" (e.g. if 16x32x32x32 fits on the GPU, then 1x64x64x64 should also be able to run).
 
 ## References
@@ -153,4 +134,4 @@ For more detailed information about the code and its functionality, please refer
 
 ## Acknowledgements
 
-This code was developed and implemented by Emanuel Maus as part of the **CaSCaDe 2.0** (**Ca**lcium **S**ignal Analysis and **Ca**lcium **De**coding **2.0**) project, with guidance and consultation of [Amit Agarwal](https://www.uni-heidelberg.de/izn/researchgroups/agarwal/), [Khaleel Alhalaseh](https://www.researchgate.net/profile/Khaleel-Alhalaseh) and [Robert Prevedel](https://www.prevedel.embl.de/). If you have any questions, suggestions, or have noticed any bugs, please feel free to contact me at emanuel.maus AT embl DOT de.
+This code was developed and implemented by Emanuel Maus as part of the **CaSCaDe 2.0** (**Ca**lcium **S**ignal Analysis and **Ca**lcium **De**coding **2.0**) project, with guidance and consultation of [Robert Prevedel](https://www.prevedel.embl.de/) et al.. If you have any questions, suggestions, or have noticed any bugs, please feel free to contact me at emanuel.maus AT embl DOT de.
