@@ -1,21 +1,22 @@
-https://gitlab.com/suamE/cascadedenoisingstrategies.git# Deep3P-Denoising
+# Deep3P-Denoising
 Deep3P Denoising: Code of the 3PM-Noise2Void and PerStruc-Denoiser Method
 
 ADD SMALL SUMMARY OF PROJECT AND RESULTING DATA
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
-- [Dataset](#dataset)
-- [Dependencies](#dependencies)
-- [Installation](#installation)
-- [How-To-Run](#how-to-run)
-  - [Training](#training)
-  - [Inference](#inference)
-  - [PerStruc-Denoiser](#perstruc-denoiser)
-  - [Further information](#further-information)
-- [Future Work](#future-work)
-- [References](#references)
-- [Acknowledgements](#acknowledgements)
+- [Deep3P-Denoising](#deep3p-denoising)
+  - [Table of Contents](#table-of-contents)
+  - [Dataset](#dataset)
+  - [Dependencies](#dependencies)
+  - [Installation](#installation)
+  - [How-To-Run](#how-to-run)
+    - [Training](#training)
+    - [Inference](#inference)
+    - [PerStruc-Denoiser](#perstruc-denoiser)
+    - [Further information](#further-information)
+  - [Future Work](#future-work)
+  - [References](#references)
+  - [Acknowledgements](#acknowledgements)
 
 ## Dataset
 
@@ -54,7 +55,7 @@ cd Deep3P-Denoising/notebooks
 ## How-To-Run
 
 
-There are three notebooks for **training** ([``01_Training-3PM-Noise2Void.ipynb``](/notebooks/01_Training-3PM-Noise2Void.ipyn)), **inference**([``02_Inference-3PM-Noise2Void.ipynb``](/notebooks/02_Inference-3PM-Noise2Void.ipynb)), and **PerStruc-Denoiser**([``03_PerStruc-Denoiser.ipynb``](/notebooks/03_PerStruc-Denoiser.ipynb)).
+There are three notebooks for **training** ([``01_Training-3PM-Noise2Void.ipynb``](notebooks/01_Training-3PM-Noise2Void.ipyn)), **inference**([``02_Inference-3PM-Noise2Void.ipynb``](notebooks/02_Inference-3PM-Noise2Void.ipynb)), and **PerStruc-Denoiser**([``03_PerStruc-Denoiser.ipynb``](notebooks/03_PerStruc-Denoiser.ipynb)).
 
 Below is a description of how to run each script:
 
