@@ -4,6 +4,7 @@
 import numpy as np
 import torch
 import copy
+import os
 import matplotlib
 
 def generate_datasets(data_stack, train_val_fraction=0.8):
@@ -122,22 +123,6 @@ class ChangeColormap4Tensorboard(object):
 
         return self.colorize(self.image)
 
-# For the later comparison between the data, the network returns, and the
-# original images, the output data is changed back to int16-format
-class NormFloat2Int16(object):
-
-    def __call__(self, data):
-        data = (data - 0.5) * (np.iinfo(np.int16).max + np.abs(np.iinfo(np.int16).min))
-        data = np.clip(data, np.iinfo(np.int16).min, np.iinfo(np.int16).max)
-        return np.rint(data).astype(np.int16)
-
-# For transformation between float32 ([0, 1]) to uint16 with clipping
-class NormFloat2Uint16(object):
-
-    def __call__(self, data):
-        data = np.clip(data*np.iinfo(np.uint16).max, 0, np.iinfo(np.uint16).max)
-        return np.rint(data).astype(np.uint16)
-
 # Apply a certain method to all data of the batch
 class BatchTransformer(object):
 
@@ -149,5 +134,121 @@ class BatchTransformer(object):
 
         return output
 
+## Helper function for inference
 
+# Load  trained model
+def load(dir_chck, netG, device, epoch=[], use_best=False):
 
+    if not os.path.exists(dir_chck) or not os.listdir(dir_chck):
+        print('There is error and no data in dir_check')
+
+    if use_best:
+        dict_net = torch.load(os.path.join(dir_chck, 'best_model.pth'), map_location=device)
+        print(dict_net.keys())
+
+        epoch = dict_net['epoch']
+        print('Loaded %dth network (lowest loss)' % epoch)
+    else:
+        if not epoch:
+            ckpt = os.listdir(dir_chck)
+            ckpt.sort()
+            epoch = int(ckpt[-1].split('epoch')[1].split('.pth')[0])
+
+        dict_net = torch.load('%s/model_epoch%04d.pth' % (dir_chck, epoch), map_location=device)
+        print('Loaded %dth network' % epoch)
+
+    netG.load_state_dict(dict_net['net'])
+
+    return netG, epoch
+
+# Calculate the normalisation factors of the image stack
+def calc_normfactors(x, pmin=0.3, pmax=98.5, axis=None):
+    """Percentile-based image normalization."""
+
+    x = x.copy()
+
+    # Normalize the data 
+    if x.dtype == 'float64':
+        x = x.astype(np.int16)
+        x = (x / (2 * np.iinfo(x.dtype).max)).astype(np.float64) + 0.5
+
+    if x.dtype == 'int16':
+        x = (x / (2 * np.iinfo(x.dtype).max)).astype(np.float64) + 0.5
+
+    if x.dtype == 'uint16':
+        x = (x / np.iinfo(x.dtype).max).astype(np.float64)
+
+    if x.dtype == 'int8':
+        x = (x / np.iinfo(x.dtype).max).astype(np.float64)
+
+    if x.dtype == 'uint8':
+        x = (x / np.iinfo(x.dtype).max).astype(np.float64)
+
+    mi = np.percentile(x,pmin,axis=axis,keepdims=False)
+    ma = np.percentile(x,pmax,axis=axis,keepdims=False)
+    print(f"Minimum: {mi}\t Maximum: {ma}")
+    return mi, ma
+
+# Backconversion
+class NormFloat2UInt16_round(object):
+    
+    def __init__(self, percent=0.8):
+        self.percent = percent
+
+    def __call__(self, data):
+
+        data = (data * self.percent * np.iinfo(np.uint16).max)
+        data = np.clip(data, np.iinfo(np.uint16).min, np.iinfo(np.uint16).max)
+        return np.rint(data).astype(np.uint16)
+    
+class NormFloat2Int16_round(object):
+    
+    def __init__(self, percent=1.0):
+        self.percent = percent
+
+    def __call__(self, data):
+
+        data = (data * self.percent - 0.5) * (np.iinfo(np.int16).max + np.abs(np.iinfo(np.int16).min))
+        data = np.clip(data, np.iinfo(np.int16).min, np.iinfo(np.int16).max)
+        return np.rint(data).astype(np.int16)
+    
+# For the overlapping and weighting it should not be rounded
+class NormFloat2UInt16(object):
+    
+    def __init__(self, percent=1.0):
+        self.percent = percent
+
+    def __call__(self, data):
+
+        data = (data * self.percent * np.iinfo(np.uint16).max)
+        data = np.clip(data, np.iinfo(np.uint16).min, np.iinfo(np.uint16).max)
+        return data
+    
+class NormFloat2Int16(object):
+    
+    def __init__(self, percent=1.0):
+        self.percent = percent
+
+    def __call__(self, data):
+
+        data = (data * self.percent - 0.5) * (np.iinfo(np.int16).max + np.abs(np.iinfo(np.int16).min))
+        data = np.clip(data, np.iinfo(np.int16).min, np.iinfo(np.int16).max)
+        return data
+    
+class NormFloat2UInt8(object):
+    
+    def __init__(self, percent=1.0):
+        self.percent = percent
+
+    def __call__(self, data):
+
+        data = (data * self.percent * np.iinfo(np.uint8).max)
+        data = np.clip(data, np.iinfo(np.uint8).min, np.iinfo(np.uint8).max)
+        return data
+    
+class UInt162NormFloat(object):
+
+    def __call__(self, data):
+
+        data = data / np.iinfo(np.uint16).max
+        return data
