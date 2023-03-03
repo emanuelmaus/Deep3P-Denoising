@@ -7,6 +7,8 @@ import copy
 import os
 import matplotlib
 
+from scipy.fftpack import fft, fftshift, fftfreq
+
 def generate_datasets(data_stack, train_val_fraction=0.8):
     """
     Generate train and validation data stacks
@@ -252,3 +254,58 @@ class UInt162NormFloat(object):
 
         data = data / np.iinfo(np.uint16).max
         return data
+
+## Helper function for the PerStruc-Algorithm
+
+# 2D Autocorrelation
+# Adapted from https://github.com/juglab/n2v/blob/master/n2v/utils/n2v_utils.py
+def autocorrelation(image):
+    """
+    nD autocorrelation
+    remove mean per-patch (not global GT)
+    normalize stddev to 1
+    value at zero shift normalized to 1...
+    """
+
+    # Get a smaller patch of the image
+    x = image[image.shape[0]//2 - 10:image.shape[0]//2 + 10,
+              image.shape[1]//2 - 10:image.shape[1]//2 + 10]
+
+    x = (x - np.mean(x))/np.std(x)
+    x  = np.fft.fftn(x)
+    x  = np.abs(x)**2
+    x = np.fft.ifftn(x).real
+    x = x / x.flat[0]
+    x = np.fft.fftshift(x)
+    return x
+
+# Line-wise FFT
+def line_fft(image, should_fftshift=False):
+    img_fft_line = np.empty(image.shape, np.complex128)
+    for ind, line in enumerate(image):
+        if should_fftshift:
+            img_fft_line[ind] = fftshift(fft(line))
+        else:
+            img_fft_line[ind] = fft(line)
+    return img_fft_line
+
+# Line-wise mean power spectrum
+def line_power_spectrum(image, should_norm=True):
+    # For FFT the line power spectrum should have odd numbers of elements
+    if  image.shape[1]%2==0:
+        image = image[:, :-1]
+
+    line_fft_img = line_fft(image, should_fftshift=True)
+    line_spectrum = np.mean(np.abs(line_fft_img), axis=0)
+
+    freqs = fftshift(fftfreq(len(line_spectrum)))
+
+    # Since the main peak in the center is not interesting, just return the first half
+    freqs_small = freqs[:len(freqs)//2 + 1]
+    line_spectrum_small = line_spectrum[:len(line_spectrum)//2 + 1]
+
+    if should_norm:
+        min_val, max_val = np.min(line_spectrum_small), np.max(line_spectrum_small)
+        line_spectrum_small =  (line_spectrum_small - min_val)/(max_val - min_val)
+    
+    return freqs_small, line_spectrum_small
