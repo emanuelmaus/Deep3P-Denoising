@@ -13,6 +13,7 @@ ADD SMALL SUMMARY OF PROJECT AND RESULTING DATA
     - [Further information](#further-information)
   - [Future Work](#future-work)
   - [References](#references)
+  - [License](#license)
   - [Acknowledgements](#acknowledgements)
 
 ## Dataset
@@ -85,6 +86,13 @@ For more detailed information about the code and its functionality, please refer
 3. Xinyang Li et al., “Reinforcing neuron extraction and spike inference in calcium imaging using deep self-supervised denoising”, In: Nat. Methods 2021
 4. Kisuk Lee et al., "Superhuman Accuracy on the SNEMI3D
 Connectomics Challenge", In: NIPS 201
+
+## License
+
+Copyright (C) 2021-2023 Emanuel Maus
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program. If not, see [https://www.gnu.org/licenses/](https://www.gnu.org/licenses/).
 
 ## Acknowledgements
 
