@@ -62,7 +62,6 @@ The sequence of execution is as follows
    - Outputs:
 
 Each notebook provides an easy-to-use tutorial on how to use it. Code sections, which can be changed to test new parameters or adapt to new data, are marked as following:
-
 ```Python
 # Select...    #
 
