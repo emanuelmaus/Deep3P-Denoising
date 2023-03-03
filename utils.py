@@ -301,8 +301,8 @@ def line_power_spectrum(image, should_norm=True):
     freqs = fftshift(fftfreq(len(line_spectrum)))
 
     # Since the main peak in the center is not interesting, just return the first half
-    freqs_small = freqs[:len(freqs)//2 + 1]
-    line_spectrum_small = line_spectrum[:len(line_spectrum)//2 + 1]
+    freqs_small = freqs[:len(freqs)//2]
+    line_spectrum_small = line_spectrum[:len(line_spectrum)//2]
 
     if should_norm:
         min_val, max_val = np.min(line_spectrum_small), np.max(line_spectrum_small)

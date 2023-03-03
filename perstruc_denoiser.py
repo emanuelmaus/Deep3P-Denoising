@@ -11,7 +11,7 @@ from scipy.ndimage import gaussian_filter1d
 def perstruc_denoiser(img_stack, FREQ_POS=72, use_gaussian=False):
 
     # Output image stack
-    modified_img_stack = np.empty(img_stack.shape, dtype=img_stack.dtype)
+    modified_img_stack = np.empty(img_stack.shape, dtype=np.float32)
     # Median value of the original image stack
     median_value = np.median(img_stack)
     # Single reference line for the whole image stack
@@ -20,14 +20,13 @@ def perstruc_denoiser(img_stack, FREQ_POS=72, use_gaussian=False):
 
     for img_ind, img in enumerate(tqdm(img_stack)):
         # Copy of the original image for further processing
-        img_cp = copy.deepcopy(img)
         img_cp_acqu = copy.deepcopy(img)
 
         # Reverse each line
         img_cp_acqu[1::2] = img_cp_acqu[1::2][:, ::-1]
 
         # Line-wise fourier transformation
-        img_fft_line = np.empty(img_cp_acqu.shape, np.complex)
+        img_fft_line = np.empty(img_cp_acqu.shape, np.complex128)
         for ind, line in enumerate(img_cp_acqu):
             img_fft_line[ind] = fft(line)
 
@@ -65,8 +64,7 @@ def perstruc_denoiser(img_stack, FREQ_POS=72, use_gaussian=False):
         img_cp_recon = img_cp_shifted_recon
         img_cp_recon[1::2] = img_cp_recon[1::2][:, ::-1]
 
-        img_cp = img_cp_recon
-        modified_img_stack[img_ind] = np.rint(img_cp_recon).astype(img_stack.dtype)
+        modified_img_stack[img_ind] = img_cp_recon
     
     # Since the median was subtracted, we need to add it afterwards
     median_value_mod = np.median(modified_img_stack)
@@ -74,7 +72,7 @@ def perstruc_denoiser(img_stack, FREQ_POS=72, use_gaussian=False):
 
     # In case of high frequency periodic structured noise, apply a 1D Gaussian filter
     if use_gaussian:
-        modified_img_stack = gaussian_filter1d(modified_img_stack)
+        modified_img_stack = gaussian_filter1d(modified_img_stack, 1)
 
     return np.rint(modified_img_stack).astype(img_stack.dtype)
 

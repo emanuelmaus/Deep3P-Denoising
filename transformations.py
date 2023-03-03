@@ -2117,11 +2117,11 @@ class N2V_mask_generator(object):
         assert num_pix >= 1, "Number of blind-spot pixels is below one. At least {}% of pixels should be replaced.".format(100.0/(np.product(self.shape)*self.n_chan))
 
         if self.dims == 2:
-            self.box_size = np.round(np.sqrt(100/perc_pixel)).astype(np.int)
+            self.box_size = np.round(np.sqrt(100/perc_pixel)).astype(np.int16)
             self.get_stratified_coords = self.__get_stratified_coords2D__
             self.rand_float = self.__rand_float_coords2D__(self.box_size)
         elif self.dims == 3:
-            self.box_size = np.round(np.sqrt(100 / perc_pixel)).astype(np.int)
+            self.box_size = np.round(np.sqrt(100 / perc_pixel)).astype(np.int16)
             self.get_stratified_coords = self.__get_stratified_coords3D__
             self.rand_float = self.__rand_float_coords3D__(self.box_size)
         else:

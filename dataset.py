@@ -13,7 +13,6 @@ class N2VDataset3D(torch.utils.data.Dataset):
     def __init__(self, data_list, stack_size, transform=None):
 
         self.data_list = data_list
-
         self.stack_size = stack_size
         
         # Extend the stack size, so that it fits into the 3D network
