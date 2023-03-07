@@ -1,13 +1,10 @@
 # Deep3P-Denoising
 Deep3P Denoising: Code of the 3PM-Noise2Void and PerStruc-Denoiser Method
-
-ADD SMALL SUMMARY OF PROJECT AND RESULTING DATA
 ## Table of Contents
 
 - [Deep3P-Denoising](#deep3p-denoising)
   - [Table of Contents](#table-of-contents)
   - [Dataset](#dataset)
-  - [Dependencies](#dependencies)
   - [Installation](#installation)
   - [How-To-Run](#how-to-run)
     - [Further information](#further-information)
@@ -21,20 +18,6 @@ ADD SMALL SUMMARY OF PROJECT AND RESULTING DATA
 - **Description:** The data used in this research project consisted of structural signals of mGFP-labeled intravital glioblastoma cells and their THG signals in the deep layers of the mouse brain, recorded using three-photon microscopy. These data are time-series of 3D volumes showing the temporal changes of glioblastoma cells and its THG signal.
 - **Preprocessing:** Before the time-series of 3D-data can be used for training or inference, it must be preprocessed. This includes registration, alignment, and cropping of translational borders. Each single 3D-time stamp is treated separately for the training and inference of the 3PM-N2V. 
 
-## Dependencies
-
-To run the code in these projects, you will need to have the following dependencies installed:
-
-- `Python 2.7`
-- `Pytorch 1.0.0+`
-- `torchvision 0.2.1+`
-- `numpy`
-- `PIL`
-- `os`
-- `TensorFlow 1.1.0+` (for tensorboard)
-- `Linux`
-
-
 ## Installation
 
 To install and use these denoising methods, follow these steps:
@@ -45,9 +28,21 @@ git clone https://github.com/emanuelmaus/Deep3P-Denoising.git
 ```
 - Navigate to the cloned repository by using the following command:
 ```sh
-cd Deep3P-Denoising/notebooks
+cd Deep3P-Denoising
 ```
-- Launch Jupyter-lab by typing ``jupyter-lab`` in your terminal.
+- Install all dependencies by creating a new environment using the [**Deep3P_Denoising.yml**](Deep3P_Denoising.yml):
+```sh
+conda env create --file Deep3P_Denoising.yml
+```
+- Activate the new environment:
+```sh
+conda activate Deep3P_Denoising
+```
+- Navigate to the notebooks containing the denoising methods by using following command:
+```sh
+cd notebooks
+```
+- Launch Jupyter-lab by typing ``jupyter-lab`` in your terminal and run the corresponding notebooks.
 
 ## How-To-Run
 
@@ -55,11 +50,8 @@ cd Deep3P-Denoising/notebooks
 There are three notebooks for **training** ([``01_Training-3PM-Noise2Void.ipynb``](notebooks/01_Training-3PM-Noise2Void.ipyn)), **inference** ([``02_Inference-3PM-Noise2Void.ipynb``](notebooks/02_Inference-3PM-Noise2Void.ipynb)), and **PerStruc-Denoiser** ([``03_PerStruc-Denoiser.ipynb``](notebooks/03_PerStruc-Denoiser.ipynb)).
 The sequence of execution is as follows
 1. [**Training: 3PM-Noise2Void**](notebooks/01_Training-3PM-Noise2Void.ipyn)
-   - Outputs:
 2. [**Inference: 3PM-Noise2Void**](notebooks/02_Inference-3PM-Noise2Void.ipynb) 
-   - Outputs:
 3. [**PerStruc-Denoiser**](notebooks/03_PerStruc-Denoiser.ipynb)
-   - Outputs:
 
 Each notebook provides an easy-to-use tutorial on how to use it. Code sections, which can be changed to test new parameters or adapt to new data, are marked as following:
 ```Python
