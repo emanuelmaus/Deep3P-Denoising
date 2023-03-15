@@ -38,6 +38,10 @@ conda env create --file Deep3P_Denoising.yml
 ```sh
 conda activate Deep3P_Denoising
 ```
+- To reduce training and inference time, access to a GPU is highly recommended. The (**NVIDIA CUDA Toolkit**)[https://developer.nvidia.com/cuda-downloads] and the (**NVIDIA CUDA Deep Neural Network (cuDNN)**)[https://docs.nvidia.com/deeplearning/cudnn/index.html] library are needed to accelerate the processing. Check which (**PyTorch packages**)[https://pytorch.org/] is compatible with the system used by selecting the correct operating system and compute platform. Run the generated command in your terminal. The command will look similar to the following:
+```sh
+conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia
+``` 
 - Navigate to the notebooks containing the denoising methods by using following command:
 ```sh
 cd notebooks
