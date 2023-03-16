@@ -21,11 +21,14 @@ class Noise2NoiseUNet3D(nn.Module):
             of feature maps is given by the geometric progression: f_maps ^ k, k=1,2,3,4,5
         init_channel_number (int): number of feature maps in the first conv layer of the encoder; default: 64
         num_groups (int): number of groups for the GroupNorm
+        is_N2V2_setup (bool): Flag if using the N2V2 setup model (source: https://openreview.net/forum?id=IZfQYb4lHVq), which has no last skip connection and uses max-blurring 
     """
 
-    def __init__(self, in_channels, out_channels, f_maps=16, num_groups=8, **kwargs):
+    def __init__(self, in_channels, out_channels, f_maps=16, num_groups=8, is_N2V2_setup=False, **kwargs):
         super(Noise2NoiseUNet3D, self).__init__()
 
+        # Set flag if N2V2 or not
+        self.is_N2V2_setup = is_N2V2_setup
         # Use LeakyReLU activation everywhere except the last layer
         conv_layer_order = 'clg'
 
@@ -41,8 +44,12 @@ class Noise2NoiseUNet3D(nn.Module):
                 encoder = Encoder(in_channels, out_feature_num, apply_pooling=False, basic_module=DoubleConv,
                                   conv_layer_order=conv_layer_order, num_groups=num_groups)
             else:
-                encoder = Encoder(f_maps[i - 1], out_feature_num, basic_module=DoubleConv,
-                                  conv_layer_order=conv_layer_order, num_groups=num_groups)
+                if self.is_N2V2_setup:
+                    encoder = Encoder(f_maps[i - 1], out_feature_num, basic_module=DoubleConv,
+                                    conv_layer_order=conv_layer_order, num_groups=num_groups, pool_type='maxblur')
+                else:
+                    encoder = Encoder(f_maps[i - 1], out_feature_num, basic_module=DoubleConv,
+                                    conv_layer_order=conv_layer_order, num_groups=num_groups)
             encoders.append(encoder)
 
         self.encoders = nn.ModuleList(encoders)
@@ -52,7 +59,10 @@ class Noise2NoiseUNet3D(nn.Module):
         decoders = []
         reversed_f_maps = list(reversed(f_maps))
         for i in range(len(reversed_f_maps) - 1):
-            in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
+            if self.is_N2V2_setup and i==len(reversed_f_maps) - 2:
+                in_feature_num = reversed_f_maps[i]
+            else:
+                in_feature_num = reversed_f_maps[i] + reversed_f_maps[i + 1]
             out_feature_num = reversed_f_maps[i + 1]
             decoder = Decoder(in_feature_num, out_feature_num, basic_module=DoubleConv,
                               conv_layer_order=conv_layer_order, num_groups=num_groups)
@@ -66,10 +76,13 @@ class Noise2NoiseUNet3D(nn.Module):
     def forward(self, x):
         # encoder part
         encoders_features = []
-        for encoder in self.encoders:
+        for ind, encoder in enumerate(self.encoders):
             x = encoder(x)
             # reverse the encoder outputs to be aligned with the decoder
-            encoders_features.insert(0, x)
+            if self.is_N2V2_setup and ind==0:
+                encoders_features.insert(0, x.size()[2:])
+            else:
+                encoders_features.insert(0, x)
 
         # remove the last encoder's output from the list
         # !!remember: it's the 1st in the list
@@ -161,7 +174,46 @@ class DoubleConv(nn.Sequential):
 def conv3d(in_channels, out_channels, kernel_size, bias, padding=1):
     return nn.Conv3d(in_channels, out_channels, kernel_size, padding=padding, bias=bias)
 
+# Generate MaxBlurPool3D for the N2V2 approach
+class MaxBlurPool3d(torch.nn.Module):
 
+    def __init__(self, pool_kernel_size, blur_kernel=None):
+        super(MaxBlurPool3d, self).__init__()
+        self.pool_kernel_size = pool_kernel_size
+        self.blur_kernel = blur_kernel
+        self.kernel = None
+
+        if self.blur_kernel is None:
+            self.blur_kernel = torch.FloatTensor(
+                [[[0.02595968, 0.03575371, 0.02595968],
+                [0.03575371, 0.04924282, 0.03575371],
+                [0.02595968, 0.03575371, 0.02595968]],
+
+                [[0.03575371, 0.04924282, 0.03575371],
+                [0.04924282, 0.06782107, 0.04924282],
+                [0.03575371, 0.04924282, 0.03575371]],
+
+                [[0.02595968, 0.03575371, 0.02595968],
+                [0.03575371, 0.04924282, 0.03575371],
+                [0.02595968, 0.03575371, 0.02595968]]]
+            )
+            self.blur_kernel = self.blur_kernel / self.blur_kernel.sum()
+
+
+    def forward(self, x):
+
+        x = torch.nn.functional.max_pool3d(x,
+                                           self.pool_kernel_size,
+                                           stride=1,
+                                           padding=self.pool_kernel_size[0]//2
+                                           )
+        if self.kernel is None:
+            self.kernel = self.blur_kernel[None].repeat_interleave(x.size(dim=1), dim=0)[None].repeat_interleave(x.size(dim=1), dim=0)
+        x = torch.nn.functional.conv3d(x,
+                                       weight=self.kernel,
+                                       stride=self.pool_kernel_size)
+        return x
+       
 def create_conv(in_channels, out_channels, kernel_size, order, num_groups, padding=1):
     """
     Create a list of modules with together constitute a single conv layer with non-linearity
@@ -229,7 +281,7 @@ class Encoder(nn.Module):
         conv_kernel_size (int): size of the convolving kernel
         apply_pooling (bool): if True use MaxPool3d before DoubleConv
         pool_kernel_size (tuple): the size of the window to take a max over
-        pool_type (str): pooling layer: 'max' or 'avg'
+        pool_type (str): pooling layer: 'max' 'maxblur' or 'avg'
         basic_module(nn.Module): either ResNetBlock or DoubleConv
         conv_layer_order (string): determines the order of layers
             in `DoubleConv` module. See `DoubleConv` for more info.
@@ -240,10 +292,12 @@ class Encoder(nn.Module):
                  pool_kernel_size=(2, 2, 2), pool_type='max', basic_module=DoubleConv, conv_layer_order='cr',
                  num_groups=8):
         super(Encoder, self).__init__()
-        assert pool_type in ['max', 'avg']
+        assert pool_type in ['max', 'maxblur', 'avg']
         if apply_pooling:
             if pool_type == 'max':
                 self.pooling = nn.MaxPool3d(kernel_size=pool_kernel_size)
+            elif pool_type == 'maxblur':
+                self.pooling = MaxBlurPool3d(pool_kernel_size=pool_kernel_size)
             else:
                 self.pooling = nn.AvgPool3d(kernel_size=pool_kernel_size)
         else:
@@ -283,6 +337,7 @@ class Decoder(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3,
                  scale_factor=(2, 2, 2), basic_module=DoubleConv, conv_layer_order='cr', num_groups=8):
         super(Decoder, self).__init__()
+
         if basic_module == DoubleConv:
             # if DoubleConv is the basic_module use nearest neighbor interpolation for upsampling
             self.upsample = None
@@ -309,15 +364,22 @@ class Decoder(nn.Module):
 
     def forward(self, encoder_features, x):
         if self.upsample is None:
-            # use nearest neighbor interpolation and concatenation joining
-            output_size = encoder_features.size()[2:]
-            x = F.interpolate(x, size=output_size, mode='nearest')
-            # concatenate encoder_features (encoder path) with the upsampled input across channel dimension
-            x = torch.cat((encoder_features, x), dim=1)
+            # If it is the N2V2 Setup, we don't have encoder_features in the last layer of the U-net, encoder_features is then the output-shape
+            if type(encoder_features) is torch.Size:
+                output_size = encoder_features
+                # use nearest neighbor interpolation
+                x = F.interpolate(x, size=output_size, mode='nearest')
+            else:
+                # use nearest neighbor interpolation and concatenation joining
+                output_size = encoder_features.size()[2:]
+                x = F.interpolate(x, size=output_size, mode='nearest')
+                # concatenate encoder_features (encoder path) with the upsampled input across channel dimension
+                x = torch.cat((encoder_features, x), dim=1)
         else:
             # use ConvTranspose3d and summation joining
             x = self.upsample(x)
-            x += encoder_features
+            if not self.is_last_layer:
+                x += encoder_features
 
         x = self.basic_module(x)
         return x
