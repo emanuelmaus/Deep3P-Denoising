@@ -184,7 +184,7 @@ class MaxBlurPool3d(torch.nn.Module):
         self.kernel = None
 
         if self.blur_kernel is None:
-            self.blur_kernel = torch.FloatTensor(
+            self.blur_kernel = torch.tensor(
                 [[[0.02595968, 0.03575371, 0.02595968],
                 [0.03575371, 0.04924282, 0.03575371],
                 [0.02595968, 0.03575371, 0.02595968]],
@@ -195,7 +195,8 @@ class MaxBlurPool3d(torch.nn.Module):
 
                 [[0.02595968, 0.03575371, 0.02595968],
                 [0.03575371, 0.04924282, 0.03575371],
-                [0.02595968, 0.03575371, 0.02595968]]], 
+                [0.02595968, 0.03575371, 0.02595968]]],
+                dtype = torch.float32, 
                 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu"))
             self.blur_kernel = self.blur_kernel / self.blur_kernel.sum()
 
