@@ -57,6 +57,9 @@ class Trainer:
         self.n2v_neighborhood_radius = data_dict['n2v_neighborhood_radius']
         self.structN2Vmask = data_dict['structN2Vmask']
 
+        # Utilize the 3D Noise2Void2
+        self.N2V2 = data_dict['N2V2']
+
         # Datasets as lists
         self.train_data_list = data_dict['train_dataset']
         self.val_data_list = data_dict['val_dataset']
@@ -278,6 +281,7 @@ class Trainer:
          
         net = Noise2NoiseUNet3D(in_channels = 1,
                                 out_channels = 1,
+                                is_N2V2_setup=self.N2V2,
                                 final_sigmoid = False).to(device)
 
         init_weights(net, init_type='normal', init_gain=0.02)
