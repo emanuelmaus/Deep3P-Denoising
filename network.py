@@ -178,9 +178,10 @@ def conv3d(in_channels, out_channels, kernel_size, bias, padding=1):
 class MaxBlurPool3d(torch.nn.Module):
 
     def __init__(self, pool_kernel_size, blur_kernel=None):
-        super(MaxBlurPool3d, self).__init__()
+        super().__init__()
         self.pool_kernel_size = pool_kernel_size
         self.blur_kernel = blur_kernel
+        self.device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
         self.kernel = None
 
         if self.blur_kernel is None:
@@ -197,23 +198,26 @@ class MaxBlurPool3d(torch.nn.Module):
                 [0.03575371, 0.04924282, 0.03575371],
                 [0.02595968, 0.03575371, 0.02595968]]],
                 dtype = torch.float32, 
-                device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu"))
+                device = self.device)
             self.blur_kernel = self.blur_kernel / self.blur_kernel.sum()
 
+        self.max_pool3d = nn.MaxPool3d(kernel_size=self.pool_kernel_size,
+                                       stride=1, 
+                                       padding=self.pool_kernel_size[0]//2)
 
     def forward(self, x):
 
-        x = torch.nn.functional.max_pool3d(x,
-                                           self.pool_kernel_size,
-                                           stride=1,
-                                           padding=self.pool_kernel_size[0]//2
-                                           )
+        x = self.max_pool3d(x)
         if self.kernel is None:
-            self.kernel = self.blur_kernel[None].repeat_interleave(x.size(dim=1), dim=0)[None].repeat_interleave(x.size(dim=1), dim=0)
+            repeats = x.size(dim=1).to(self.device)
+            self.__generate_kernel(repeats)
         x = torch.nn.functional.conv3d(x,
                                        weight=self.kernel,
                                        stride=self.pool_kernel_size)
         return x
+    
+    def __generate_kernel(self, repeats):
+        self.kernel = self.blur_kernel[None].repeat_interleave(repeats, dim=0)[None].repeat_interleave(repeats, dim=0)
        
 def create_conv(in_channels, out_channels, kernel_size, order, num_groups, padding=1):
     """

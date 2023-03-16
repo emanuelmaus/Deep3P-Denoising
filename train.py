@@ -309,7 +309,10 @@ class Trainer:
         ###########################################
         # make the model visible on tensorboard
         data_example = next(iter(loader_train))
-        writer_train.add_graph(net, data_example['input'].to(device), verbose=False)
+        try:
+            writer_train.add_graph(net, data_example['input'].to(device), verbose=False)
+        except:
+            print("The model graph for tensorboard can't be generate due to tracing problems (N2V2 Problem)")
         ##########################################
 
         ## Training
