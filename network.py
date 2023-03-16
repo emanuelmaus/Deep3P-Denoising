@@ -209,7 +209,7 @@ class MaxBlurPool3d(torch.nn.Module):
 
         x = self.max_pool3d(x)
         if self.kernel is None:
-            repeats = x.size(dim=1).to(self.device)
+            repeats = torch.tensor(x.size(dim=1), device = self.device)
             self.__generate_kernel(repeats)
         x = torch.nn.functional.conv3d(x,
                                        weight=self.kernel,
