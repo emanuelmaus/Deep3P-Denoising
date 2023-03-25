@@ -177,7 +177,7 @@ def conv3d(in_channels, out_channels, kernel_size, bias, padding=1):
 # Generate MaxBlurPool3D for the N2V2 approach
 class MaxBlurPool3d(torch.nn.Module):
 
-    def __init__(self, pool_kernel_size, blur_kernel=None):
+    def __init__(self, pool_kernel_size, channels, blur_kernel=None):
         super().__init__()
         self.pool_kernel_size = pool_kernel_size
         self.blur_kernel = blur_kernel
@@ -204,21 +204,20 @@ class MaxBlurPool3d(torch.nn.Module):
         self.max_pool3d = nn.MaxPool3d(kernel_size=self.pool_kernel_size,
                                        stride=1, 
                                        padding=self.pool_kernel_size[0]//2)
+        
+        repeats = torch.tensor(channels, device = self.device)
+        self.kernel = self.blur_kernel[None].repeat_interleave(repeats, dim=0)[None].repeat_interleave(repeats, dim=0)
+
 
     def forward(self, x):
 
         x = self.max_pool3d(x)
-        if self.kernel is None:
-            repeats = torch.tensor(x.size(dim=1), device = self.device)
-            self.__generate_kernel(repeats)
         x = torch.nn.functional.conv3d(x,
                                        weight=self.kernel,
                                        stride=self.pool_kernel_size)
         return x
-    
-    def __generate_kernel(self, repeats):
-        self.kernel = self.blur_kernel[None].repeat_interleave(repeats, dim=0)[None].repeat_interleave(repeats, dim=0)
        
+
 def create_conv(in_channels, out_channels, kernel_size, order, num_groups, padding=1):
     """
     Create a list of modules with together constitute a single conv layer with non-linearity
@@ -302,7 +301,7 @@ class Encoder(nn.Module):
             if pool_type == 'max':
                 self.pooling = nn.MaxPool3d(kernel_size=pool_kernel_size)
             elif pool_type == 'maxblur':
-                self.pooling = MaxBlurPool3d(pool_kernel_size=pool_kernel_size)
+                self.pooling = MaxBlurPool3d(pool_kernel_size=pool_kernel_size, channels=in_channels)
             else:
                 self.pooling = nn.AvgPool3d(kernel_size=pool_kernel_size)
         else:
